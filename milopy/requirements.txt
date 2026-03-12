@@ -1,0 +1,6 @@
+scanpy
+pandas
+anndata
+numpy
+rpy2==3.4.2
+scipy
