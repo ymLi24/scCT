@@ -17,3 +17,14 @@ A novel reference-based single-cell Cell Type mapping method (scCT), built upon 
 
 <img width="550" height="350" alt="figure2" src="https://github.com/user-attachments/assets/fa54d4b2-f4f7-43f2-9ee0-56dc1a386d7f" />
 
+
+## Environment
+
+- Conda
+  ```
+  conda create -n scct python=3.10 -y
+  conda activate scct
+  pip install -r requirements.txt
+  cd milopy
+  pip install .
+  pip install torch==1.11.0+cu113 torchvision torchaudio  --extra-index-url https://download.pytorch.org/whl/cu113
