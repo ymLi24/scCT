@@ -5,8 +5,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 import scanpy as sc
 import torch
-import scarches as sca
-from scarches.dataset.trvae.data_handling import remove_sparsity
 import matplotlib.pyplot as plt
 import numpy as np
 import gdown
