@@ -25,6 +25,46 @@ A novel reference-based single-cell Cell Type mapping method (scCT), built upon 
   conda create -n scct python=3.10 -y
   conda activate scct
   pip install -r requirements.txt
-  cd milopy
-  pip install .
-  pip install torch==1.11.0+cu113 torchvision torchaudio  --extra-index-url https://download.pytorch.org/whl/cu113
+  pip install torch==1.11.0+cu113 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+  ```
+
+If you also want to compute the DAlogFC metric, first install the required environments and dependencies (R, compilation tools, and prerequisite packages):
+
+```
+conda install -y r-base=4.3.1
+conda install -y compilers
+conda install -y -c conda-forge xz zlib
+conda install -y bioconda::bioconductor-edger=4.0.16
+```
+
+Then install the local package:
+
+```
+cd milopy
+pip install .
+```
+
+## Quick Start
+
+A minimal, end-to-end runnable example from scratch to visualization.
+
+1) Download example data  
+You can download the prepared Breast dataset from the provided link.
+```
+https://cloud.tsinghua.edu.cn/f/9fae471421434b80bb71/?dl=1
+```
+Unzip it and place the folder in the same directory as the code. Keep the original folder name as Breast2 after extraction.
+
+2) Train and infer (build the reference atlas and map the query data to the reference)
+```
+python scCT.py --dataset Breast
+```
+
+Expected output:  
+After running, you should find a result folder under:
+./scCT/Breast2/Breast2_delete_basal_cell/resultBreast/result
+
+This folder contains UMAP visualization results.
+<img width="800" height="500" alt="屏幕截图 2026-03-29 172323" src="https://github.com/user-attachments/assets/a6089cf7-f456-4b67-8b2d-b7daf121a405" />
+
+  
