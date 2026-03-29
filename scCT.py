@@ -1,6 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-today = "/ALAD0312/"
+today = "/resultBreast/"
 
 import argparse
 import anndata as ad
@@ -17,8 +16,8 @@ import seaborn as sns
 
 DATASET_CONFIGS = {
     "Breast": {
-        "base_root": "/Breast2",
-        "delete_list_csv": "/Breast2/Breast2_delete_celltype_list.csv",
+        "base_root": "./Breast2",
+        "delete_list_csv": "./Breast2/Breast2_delete_celltype_list.csv",
         "prefix": "Breast2",
         "obs_mapping": {
             "train": {
@@ -34,8 +33,8 @@ DATASET_CONFIGS = {
         "args_override": {},   
     },
     "Pancreas": {
-        "base_root": "/Pancreas2",
-        "delete_list_csv": "/Pancreas2/Pancreas2_delete_celltype_list.csv",
+        "base_root": "./Pancreas2",
+        "delete_list_csv": "./Pancreas2/Pancreas2_delete_celltype_list.csv",
         "prefix": "Pancreas2",
         "obs_mapping": {
             "train": {
@@ -51,8 +50,8 @@ DATASET_CONFIGS = {
         "args_override": {},  
     },
     "PBMC": {
-        "base_root": "/PBMC2",
-        "delete_list_csv": "/PBMC2/PBMC2_delete_celltype_list.csv",
+        "base_root": "./PBMC2",
+        "delete_list_csv": "./PBMC2/PBMC2_delete_celltype_list.csv",
         "prefix": "PBMC2",
         "obs_mapping": {
             "train": {
@@ -162,7 +161,7 @@ newtype = delete_type_list
 for itype in newtype:
     base_dir = f"{cfg['base_root']}/{cfg['prefix']}_delete_{itype}{today}"
     set_cwd_and_result(base_dir)
-    result_dir = os.path.join(base_dir, "result")
+    result_dir = "./result"
 
 
     adata  = sc.read("../source_adata.h5ad")

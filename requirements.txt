@@ -10,3 +10,4 @@ umap-learn==0.5.1
 gdown==4.4.0
 barbar==0.2.1
 setuptools==81.0.0
+leidenalg==0.11.0
