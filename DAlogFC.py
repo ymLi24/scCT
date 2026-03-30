@@ -117,8 +117,16 @@ def plot_DAlogFC(adata, output_dir=".", min_logFC=1, alpha=0.001):
     plt.savefig(os.path.join(output_dir, "DAlogFC_plot.pdf"))
     print("Saved: DAlogFC_plot.pdf")
 
+def sanitize_name(name: str) -> str:
+    import re
+    name = re.sub(r"[^0-9a-zA-Z]+", "_", str(name)) 
+    name = re.sub(r"_+", "_", name)                  
+    name = name.strip("_")                         
+    return name
+
+
 delete_type_list = pd.read_csv(
-    "/PBMC2/PBMC2_delete_celltype_list.csv",
+    "./Breast2/Breast2_delete_celltype_list.csv",
     index_col=0
 ).iloc[:, 0]
 newtype = delete_type_list
@@ -128,10 +136,11 @@ results = []
 
 
 for itype in newtype:
-    target_celltype = itype
+    target_celltype_raw = str(itype)
+    target_celltype = sanitize_name(target_celltype_raw)
 
     
-    delete_dir = f"/PBMC2/PBMC2_delete_{itype}"
+    delete_dir = f"./Breast2/Breast2_delete_{itype}"
 
     if not os.path.isdir(delete_dir):
         print(f"[Skip] delete dir not found: {delete_dir}")
@@ -156,16 +165,39 @@ for itype in newtype:
             print(f"[Skip] h5ad not found: {adata_path}")
             continue
 
-        print(f"\n=== Processing celltype: {itype} | method: {method} ===")
-
+        print(f"\n=== Processing celltype: {target_celltype_raw} (sanitized: {target_celltype}) | method: {method} ===")
 
         data = sc.read_h5ad(adata_path)
+
+        celltype_key = "cell_type"
+        if celltype_key not in data.obs.columns:
+            print(f"[Error] '{celltype_key}' not found in adata.obs for {target_celltype_raw} | {method}")
+            results.append({
+                "celltype": target_celltype_raw,
+                "method": method,
+                "da_auprc": np.nan,
+                "note": f"missing obs['{celltype_key}']"
+            })
+            continue
+
+        data.obs["cell_type_sanitized"] = data.obs[celltype_key].astype(str).map(sanitize_name)
+
+        matched_mask = (data.obs["cell_type_sanitized"] == target_celltype)
+        n_matched_cells = int(matched_mask.sum())
+
+        if n_matched_cells > 0:
+            print(f"[Match] target '{target_celltype_raw}' -> sanitized '{target_celltype}' "
+                  f"matched {n_matched_cells} cells in adata.obs['cell_type_sanitized'].")
+            matched_flag = True
+        else:
+            print(f"[No Match] target '{target_celltype_raw}' -> sanitized '{target_celltype}' "
+                  f"found 0 cells in adata.obs['cell_type_sanitized'].")
+            matched_flag = False
 
 
         params = data.uns.get("neighbors", {}).get("params", {})
         if "use_rep" not in params:
             sc.pp.neighbors(data, use_rep="X")
-
 
         try:
             result = DALogFC(
@@ -174,14 +206,13 @@ for itype in newtype:
                 ref_key="ref",
                 query_key="query",
                 batch_key="sample_id",
-                celltype_key="cell_type",
+                celltype_key="cell_type",  
                 milo_design="~is_query",
             )
         except Exception as e:
-            print(f"[Error] DALogFC failed for {itype} | {method}: {e}")
-
+            print(f"[Error] DALogFC failed for {target_celltype_raw} | {method}: {e}")
             results.append({
-                "celltype": itype,
+                "celltype": target_celltype_raw,
                 "method": method,
                 "da_auprc": np.nan,
                 "note": f"DALogFC failed: {e}"
@@ -189,10 +220,9 @@ for itype in newtype:
             continue
 
         adata = data
-        celltype_key = "cell_type"
 
-
-        adata.obs["is_abnormal"] = (adata.obs[celltype_key] == target_celltype).astype(int)
+        plot_DAlogFC(adata, output_dir="./Breast2/", min_logFC=3, alpha=0.001)
+        adata.obs["is_abnormal"] = (adata.obs["cell_type_sanitized"] == target_celltype).astype(int)
 
 
         if "sample_adata" in adata.uns:
@@ -200,9 +230,9 @@ for itype in newtype:
         elif "sample_adata" in result.uns:
             sample_adata = result.uns["sample_adata"]
         else:
-            print(f"[Error] sample_adata not found for {itype} | {method}")
+            print(f"[Error] sample_adata not found for {target_celltype_raw} | {method}")
             results.append({
-                "celltype": itype,
+                "celltype": target_celltype_raw,
                 "method": method,
                 "da_auprc": np.nan,
                 "note": "sample_adata missing"
@@ -214,26 +244,21 @@ for itype in newtype:
 
         n_OOR_cells = groups_mat[:, adata.obs["is_abnormal"] == 1].toarray().sum(1)
 
-
         total_cells_per_nhood = np.array(groups_mat.sum(1)).ravel()
 
-
         frac_OOR_cells = n_OOR_cells / (total_cells_per_nhood + 1e-10)
-
-
         max_frac = frac_OOR_cells.max()
         OOR_thresh = 0.2 * max_frac
         y_true = (frac_OOR_cells > OOR_thresh).astype(int)
-
 
         if "nhood_adata" in adata.uns:
             nhood_adata = adata.uns["nhood_adata"]
         elif "nhood_adata" in result.uns:
             nhood_adata = result.uns["nhood_adata"]
         else:
-            print(f"[Error] nhood_adata not found for {itype} | {method}")
+            print(f"[Error] nhood_adata not found for {target_celltype_raw} | {method}")
             results.append({
-                "celltype": itype,
+                "celltype": target_celltype_raw,
                 "method": method,
                 "da_auprc": np.nan,
                 "note": "nhood_adata missing"
@@ -242,9 +267,9 @@ for itype in newtype:
 
         y_pred = nhood_adata.obs["logFC"].values
 
-
+        # da_auprc
         if y_true.sum() == 0:
-            print(f"Warning: No positive nhoods found for target cell type '{target_celltype}' in DAlogFC scores.")
+            print(f"Warning: No positive nhoods found for target cell type '{target_celltype_raw}' in DAlogFC scores.")
             da_auprc = 0.0
             note = "no positive nhoods"
         else:
@@ -252,24 +277,22 @@ for itype in newtype:
                 da_auprc = compute_identification_metrics(y_true=y_true, y_score=y_pred)
                 note = ""
             except Exception as e:
-                print(f"[Error] AUPRC computation failed for {itype} | {method}: {e}")
+                print(f"[Error] AUPRC computation failed for {target_celltype_raw} | {method}: {e}")
                 da_auprc = np.nan
                 note = f"AUPRC failed: {e}"
 
-
-        print(f"Result -> celltype: {itype}, method: {method}, da_auprc: {da_auprc}")
-
+        print(f"Result -> celltype: {target_celltype_raw}, method: {method}, da_auprc: {da_auprc}")
 
         results.append({
-            "celltype": itype,
+            "celltype": target_celltype_raw,
             "method": method,
             "da_auprc": da_auprc,
             "note": note
         })
 
 results_df = pd.DataFrame(results)
-save_path = "/PBMC2/PBMC2_DAlogFC_summary.csv"
+save_path = "./Breast2/Breast2_DAlogFC_summary_new.csv"
 results_df.to_csv(save_path, index=False)
-
 print(f"\nAll done. Summary saved to: {save_path}")
 print(results_df.head())
+
