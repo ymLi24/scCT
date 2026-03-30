@@ -65,6 +65,17 @@ After running, you should find a result folder under:
 ./scCT/Breast2/Breast2_delete_basal_cell/resultBreast/result
 
 This folder contains UMAP visualization results.
+
 <img width="800" height="500" alt="屏幕截图 2026-03-29 172323" src="https://github.com/user-attachments/assets/a6089cf7-f456-4b67-8b2d-b7daf121a405" />
 
   
+3) If you also want to compute the DAlogFC metric, make sure you have installed package required.
+
+```
+python DAlogFC.py
+```
+
+Then you can see the DAlogFC AUPRC and the score of UMAP plot.
+
+<img width="200" height="200" alt="DAlogFC03" src="https://github.com/user-attachments/assets/ad892828-e8c8-4b7a-bbac-a3fef8d7a7c8" />
+
